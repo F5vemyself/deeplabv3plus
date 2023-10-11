@@ -1,3 +1,4 @@
 log/
-model/
 data/
+*.pth
+
