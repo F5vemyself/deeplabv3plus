@@ -1,0 +1,14 @@
+  backbound: 94.733%	  aeroplane: 92.422%
+    bicycle: 43.771%	       bird: 89.729%
+       boat: 74.913%	     bottle: 82.731%
+        bus: 95.616%	        car: 89.028%
+        cat: 94.553%	      chair: 41.205%
+        cow: 90.457%	diningtable: 58.292%
+        dog: 90.432%	      horse: 88.027%
+  motorbike: 86.099%	     person: 87.398%
+pottedplant: 68.010%	      sheep: 90.589%
+       sofa: 52.553%	      train: 88.096%
+  tvmonitor: 79.574%	
+======================================================
+       mIoU: 79.916%
+Test finished
