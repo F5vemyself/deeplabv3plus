@@ -266,7 +266,12 @@ class VOCDataset(Dataset):
                 gt_file = os.path.join(gt_folder,'%s.png'%name)
                 predict = np.array(Image.open(predict_file)) #cv2.imread(predict_file)
                 gt = np.array(Image.open(gt_file))
+                # 筛选图像中像素值小于 255 的部分，这部分是物体，=255的部分是背景
                 cal = gt<255
+                # predict 是一个包含模型的预测结果的 NumPy 数组。
+                # gt 是一个包含真实标签的图像的 NumPy 数组。
+                # predict == gt：这是一个逐元素的比较操作，返回一个布尔数组，其中对于每个像素，如果模型的预测结果等于真实标签，就为 True，否则为 False。这表示哪些像素被正确预测为相同的类别。
+                # 比较模型的预测结果 (predict) 和真实标签 (gt)，并且只选择真实标签中非背景类别的像素
                 mask = (predict==gt) * cal
           
                 for i in range(self.cfg.MODEL_NUM_CLASSES):

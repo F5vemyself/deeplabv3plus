@@ -23,11 +23,16 @@ class COCODataset(Dataset):
         self.dataset_name = dataset_name
         self.root_dir = os.path.join(cfg.ROOT_DIR,'data','MSCOCO')
         self.dataset_dir = self.root_dir
-        
+        # data/MSCOCO/results/COCO2017/Segmentation
+        self.rst_dir = os.path.join(self.root_dir, 'results', dataset_name, 'Segmentation')
+        # data/MSCOCO/eval_result/COCO2017/Segmentation
+        self.eval_dir = os.path.join(self.root_dir, 'eval_result', dataset_name, 'Segmentation')
         self.period = period
         self.year = self.__get_year()
         self.img_dir = os.path.join(self.dataset_dir, 'images','%s%s'%(self.period,self.year))
         self.ann_dir = os.path.join(self.dataset_dir, 'annotations/instances_%s%s.json'%(self.period,self.year))
+        # coco-stuff数据集gt的位置
+        self.seg_dir = os.path.join(self.dataset_dir, 'annotations')
         self.ids_file = os.path.join(self.dataset_dir, 'annotations/instances_%s%s_ids.mx'%(self.period,self.year))
         self.rescale = None
         self.randomcrop = None
@@ -37,6 +42,8 @@ class COCODataset(Dataset):
         self.randomhsv = None
         self.totensor = ToTensor()
 
+        # 获取文件名,lsc add
+        self.name_list = []
 
         self.voc2coco = [[0],
                          [5],
@@ -106,14 +113,23 @@ class COCODataset(Dataset):
 
     def __getitem__(self, idx):
         img_ann = self.coco.loadImgs(self.imgIds[idx])
+        # /home/xxx/lsc/xxx/data/MSCOCO/images/val2017/000000352684.jpg
         name = os.path.join(self.img_dir, img_ann[0]['file_name'])
+        # lsc add
+        file_name = img_ann[0]['file_name']
+        # 去掉.jpg字符
+        file_name = file_name[:-4]
+        # img_ann[0]['file_name']  xxx.jpg
         image = cv2.imread(name)
+        # 新增一个属性用来保存文件的名字
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         r,c,_ = image.shape
-        sample = {'image': image, 'name': name, 'row': r, 'col': c}
+        # sample = {'image': image, 'name': name, 'row': r, 'col': c}
+        sample = {'image': image, 'name': file_name, 'row': r, 'col': c}
 
         
         if self.period == 'train':
+
             annIds = self.coco.getAnnIds(imgIds=self.imgIds[idx])
             anns = self.coco.loadAnns(annIds)
             segmentation = np.zeros((r,c),dtype=np.uint8)
@@ -198,12 +214,17 @@ class COCODataset(Dataset):
             result_list(list of dict): [{'name':name1, 'predict':predict_seg1},{...},...]
 
         """
+        # print("rst_dir:",self.rst_dir)
+        # data/MSCOCO/results/COCO2017/Segmentation
+        # print("model_id:",model_id)
         i = 1
         folder_path = os.path.join(self.rst_dir, '%s_%s_cls' % (model_id, self.period))
+        # print("folder_path:",folder_path)
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
         for sample in result_list:
             file_path = os.path.join(folder_path, '%s.png' % sample['name'])
+            self.name_list.append(sample['name'])
             # predict_color = self.label2colormap(sample['predict'])
             # p = self.__coco2voc(sample['predict'])
             cv2.imwrite(file_path, sample['predict'])
@@ -212,24 +233,35 @@ class COCODataset(Dataset):
 
     def do_python_eval(self, model_id):
         predict_folder = os.path.join(self.rst_dir, '%s_%s_cls' % (model_id, self.period))
-        gt_folder = self.seg_dir
+        # seg_dir: data/MSCOCO/annotations
+        # gt_folder：data/MSCOCO/annotations/stuff_val2017_pixelmaps
+        gt_folder = os.path.join(self.seg_dir,"stuff_val2017_pixelmaps")
         TP = []
         P = []
         T = []
         for i in range(self.cfg.MODEL_NUM_CLASSES):
+            # 创建一个共享内存的值,'i' 表示整数 (integer) 类型。
+            # 0：这是初始值，指定了共享值的初始值。
+            # lock=True：这是一个布尔参数，如果设置为 True，则表示在访问共享值时要使用锁（lock），以确保多个进程不会同时修改它，从而避免竞争条件。
             TP.append(multiprocessing.Value('i', 0, lock=True))
             P.append(multiprocessing.Value('i', 0, lock=True))
             T.append(multiprocessing.Value('i', 0, lock=True))
-
+        print("name_list:",self.name_list)
         def compare(start, step, TP, P, T):
             for idx in range(start, len(self.name_list), step):
                 print('%d/%d' % (idx, len(self.name_list)))
                 name = self.name_list[idx]
+                # lsc add
+                print("name:",name)
                 predict_file = os.path.join(predict_folder, '%s.png' % name)
                 gt_file = os.path.join(gt_folder, '%s.png' % name)
                 predict = np.array(Image.open(predict_file))  # cv2.imread(predict_file)
                 gt = np.array(Image.open(gt_file))
                 cal = gt < 255
+                # predict 是一个包含模型的预测结果的 NumPy 数组。
+                # gt 是一个包含真实标签的图像的 NumPy 数组。
+                # predict == gt：这是一个逐元素的比较操作，返回一个布尔数组，其中对于每个像素，如果模型的预测结果等于真实标签，就为 True，否则为 False。这表示哪些像素被正确预测为相同的类别。
+                # 比较模型的预测结果 (predict) 和真实标签 (gt)，并且只选择真实标签中非背景类别的像素
                 mask = (predict == gt) * cal
 
                 for i in range(self.cfg.MODEL_NUM_CLASSES):

@@ -25,7 +25,6 @@ def test_net():
 				batch_size=cfg.TEST_BATCHES, 
 				shuffle=False, 
 				num_workers=cfg.DATA_WORKERS)
-	
 	net = generate_net(cfg)
 	print('net initialize')
 	if cfg.TEST_CKPT is None:
@@ -56,7 +55,6 @@ def test_net():
 		# image_1.75:(8,3,896,896)
 
 		for i_batch, sample_batched in enumerate(dataloader):
-
 			name_batched = sample_batched['name']
 			# 提取图像的宽row、高col
 			row_batched = sample_batched['row']
@@ -68,7 +66,7 @@ def test_net():
 			multi_avg = torch.zeros((batch, cfg.MODEL_NUM_CLASSES, height, width), dtype=torch.float32).to(1)
 			# cfg.TEST_MULTISCALE：[0.5,0.75,1.0,1.25,1.5,1.75]
 			for rate in cfg.TEST_MULTISCALE:
-				inputs_batched = sample_batched['image_%f'%rate]
+				inputs_batched = sample_batched['image']
 				# 使用神经网络 net 对 inputs_batched 进行前向传播，得到预测结果 predicts。
 				# 这里的 .to(1) 是将预测结果移动到 GPU 上进行计算。
 				predicts = net(inputs_batched).to(1)

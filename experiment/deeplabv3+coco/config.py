@@ -57,7 +57,7 @@ class Configuration():
 		self.TEST_MULTISCALE = [1.0]#[0.5, 0.75, 1.0, 1.25, 1.5, 1.75]
 		self.TEST_FLIP = False
 		# self.TEST_CKPT = None
-		self.TEST_CKPT = os.path.join(self.ROOT_DIR,'model/deeplabv3+coco/deeplabv3plus_xception_COCO2017_itr50000.pth')
+		self.TEST_CKPT = os.path.join(self.ROOT_DIR,'model/deeplabv3+coco/deeplabv3plus_xception_COCO2017_itr115000.pth')
 		# #os.path.join(self.ROOT_DIR,'model/danetvoc/DANet_xception_VOC2012_epoch60_all.pth')
 		self.TEST_GPUS = 2
 		self.TEST_BATCHES = 8

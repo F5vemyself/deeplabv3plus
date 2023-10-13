@@ -58,6 +58,7 @@ def test_net():
 
 		for i_batch, sample_batched in enumerate(dataloader):
 			name_batched = sample_batched['name']
+			print(name_batched)
 			# 提取图像的宽row、高col
 			row_batched = sample_batched['row']
 			col_batched = sample_batched['col']
